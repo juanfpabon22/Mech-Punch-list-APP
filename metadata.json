@@ -1,0 +1,8 @@
+{
+  "name": "Punch List Pro",
+  "description": "Professional punch list management app for industrial construction projects with role-based workflows and AI capabilities.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
