@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { generateImageReference } from '../services/geminiService';
 
 interface AIGeneratorProps {
@@ -10,20 +10,45 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onBack }) => {
   const [size, setSize] = useState<'1K' | '2K' | '4K'>('1K');
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [hasKey, setHasKey] = useState(true);
+
+  useEffect(() => {
+    const checkKey = async () => {
+      const selected = await window.aistudio.hasSelectedApiKey();
+      setHasKey(selected);
+    };
+    checkKey();
+  }, []);
+
+  const handleOpenKeySelector = async () => {
+    await window.aistudio.openSelectKey();
+    setHasKey(true);
+  };
 
   const handleGenerate = async () => {
     if (!prompt) return;
-    setLoading(true);
-    // In a real app with API Key, we would use:
-    // const result = await generateImageReference(prompt, size);
-    // setGeneratedImage(result);
     
-    // Simulation:
-    setTimeout(() => {
-        setLoading(false);
-        // Placeholder for demo as we don't have a live key in this context usually
-        setGeneratedImage('https://lh3.googleusercontent.com/aida-public/AB6AXuAtGEIA4-DZbfH5bM5btackm73wU-WC4uoYdy1zYFuATbPlxQiw34o0vqlHSzKw-Dnln-XA6k3p75CFE3-Cvq9bd6Ni5c9DKEhcsnQ5FDosKDokcxyXvMb2fLeCVJjv6A4svSFAIiRcXf8E1ehwH4pCxUvirxrbI5KMAPCYf9jiHCsO65lpfdwSpF3YJ7h9YVWPKd0iWIXkW4WPuj1ipKqohmX38QBPE7HosFnXfCy4bH7Uh4wruxXPHUqv_azi8hL_4xgzH3x8HOo'); 
-    }, 2500);
+    // Verificar clave antes de proceder
+    const selected = await window.aistudio.hasSelectedApiKey();
+    if (!selected) {
+      setHasKey(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await generateImageReference(prompt, size);
+      setGeneratedImage(result);
+    } catch (error: any) {
+      if (error.message?.includes("Requested entity was not found")) {
+        setHasKey(false);
+        alert("La API Key seleccionada no es válida o no tiene facturación. Por favor, selecciona una nueva.");
+      } else {
+        alert("Error al generar la imagen. Por favor intenta de nuevo.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -37,14 +62,42 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onBack }) => {
         </header>
 
         <main className="flex-1 p-4 flex flex-col gap-6 overflow-y-auto">
+            {!hasKey && (
+              <div className="bg-orange-500/10 border border-orange-500/30 p-4 rounded-xl flex flex-col gap-3">
+                <div className="flex items-start gap-3">
+                  <span className="material-symbols-outlined text-orange-500">key_off</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-orange-600 dark:text-orange-400">API Key Requerida</p>
+                    <p className="text-xs text-orange-600/80 dark:text-orange-400/80">Para generar imágenes de alta calidad (2K/4K), debes vincular una clave de un proyecto con facturación.</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handleOpenKeySelector}
+                    className="flex-1 bg-orange-500 text-white text-xs font-bold py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                  >
+                    Configurar Clave
+                  </button>
+                  <a 
+                    href="https://ai.google.dev/gemini-api/docs/billing" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex-1 border border-orange-500/30 text-orange-600 dark:text-orange-400 text-xs font-bold py-2 rounded-lg text-center hover:bg-orange-500/5 transition-colors"
+                  >
+                    Ver Facturación
+                  </a>
+                </div>
+              </div>
+            )}
+
             <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-2xl p-6 border border-indigo-500/20">
                 <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-indigo-500 rounded-lg text-white">
                         <span className="material-symbols-outlined">auto_awesome</span>
                     </div>
                     <div>
-                        <h2 className="font-bold text-lg">Nano Banana Pro</h2>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Generación de imágenes de alta calidad</p>
+                        <h2 className="font-bold text-lg">Imagen Gen Pro</h2>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Calidad industrial con Gemini 3 Pro</p>
                     </div>
                 </div>
 
@@ -54,13 +107,13 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onBack }) => {
                         <textarea 
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
-                            placeholder="Ej. Interior de almacén industrial moderno con iluminación LED..."
-                            className="w-full bg-white dark:bg-background-dark border border-slate-200 dark:border-slate-700 rounded-xl p-3 h-24 resize-none focus:ring-2 focus:ring-indigo-500 outline-none"
+                            placeholder="Ej. Detalle de montaje de bridas industriales en caldera de alta presión, estilo fotorealista..."
+                            className="w-full bg-white dark:bg-background-dark border border-slate-200 dark:border-slate-700 rounded-xl p-3 h-24 resize-none focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
                         ></textarea>
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Tamaño</label>
+                        <label className="text-sm font-medium">Resolución</label>
                         <div className="flex gap-2">
                             {['1K', '2K', '4K'].map((s) => (
                                 <button 
@@ -80,21 +133,30 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onBack }) => {
                         className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? <span className="material-symbols-outlined animate-spin">refresh</span> : <span className="material-symbols-outlined">draw</span>}
-                        {loading ? 'Generando...' : 'Generar Imagen'}
+                        {loading ? 'Generando...' : 'Generar Referencia'}
                     </button>
                 </div>
             </div>
 
             {generatedImage && (
-                <div className="space-y-2 animate-fade-in">
-                    <h3 className="font-bold text-sm uppercase tracking-wide text-slate-500">Resultado</h3>
-                    <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-800">
+                <div className="space-y-3 animate-fade-in mb-10">
+                    <div className="flex items-center justify-between px-1">
+                      <h3 className="font-bold text-sm uppercase tracking-wide text-slate-500">Resultado AI</h3>
+                      <span className="text-[10px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full font-bold">Referencia Visual</span>
+                    </div>
+                    <div className="rounded-2xl overflow-hidden shadow-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900">
                         <img src={generatedImage} alt="Generated" className="w-full h-auto" />
                     </div>
-                    <button className="w-full py-3 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
-                        <span className="material-symbols-outlined">download</span>
-                        Descargar
-                    </button>
+                    <div className="flex gap-2">
+                      <button className="flex-1 py-3 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors text-sm">
+                          <span className="material-symbols-outlined text-lg">download</span>
+                          Descargar
+                      </button>
+                      <button onClick={() => setGeneratedImage(null)} className="flex-1 py-3 border border-slate-200 dark:border-slate-800 text-slate-500 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm">
+                          <span className="material-symbols-outlined text-lg">delete</span>
+                          Limpiar
+                      </button>
+                    </div>
                 </div>
             )}
         </main>

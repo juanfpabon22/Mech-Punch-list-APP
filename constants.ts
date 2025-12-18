@@ -54,6 +54,9 @@ export const USERS: User[] = [
 
 export const CURRENT_USER: User = USERS[0];
 
+// Responsable único para todos los pendientes
+export const DEFAULT_ASSIGNED_TO = 'Supervisor 1';
+
 export const SYSTEMS: System[] = [
   { id: 's1', projectId: 'p1', name: 'Torre Norte - Piso 3', code: 'TN-03' },
   { id: 's2', projectId: 'p1', name: 'Torre Norte - Piso 4', code: 'TN-04' },
@@ -83,7 +86,7 @@ export const PUNCH_ITEMS: PunchItem[] = [
     description: 'Se observa goteo constante en la unión bridada de la línea de 4".',
     status: Status.OPEN,
     priority: Priority.A,
-    assignedTo: 'Supervisor 1',
+    assignedTo: DEFAULT_ASSIGNED_TO,
     createdBy: 'Juan Camilo Palacios',
     createdAt: '2023-10-24',
     location: 'Nivel +3.50',
